@@ -115,11 +115,3 @@ This confirms **true distributed execution**, not local mode.
 - Spark Web UI is essential for understanding execution behavior and performance
 - Docker simplifies reproducible big data environments
 
----
-
-## Future Improvements
-
-- Experiment with tree-based models (Random Forest, GBT)
-- Add hyperparameter tuning with cross-validation
-- Scale to larger datasets
-- Explore streaming data with Spark Structured Streaming
