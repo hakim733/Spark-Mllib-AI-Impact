@@ -1,0 +1,5 @@
+__pycache__/
+.ipynb_checkpoints/
+.env
+spark_data/*.csv
+spark_data/split/*.csv
