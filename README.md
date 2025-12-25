@@ -1,93 +1,88 @@
 Distributed Machine Learning with Apache Spark (MLlib)
 
-This project demonstrates how to design, execute, and evaluate a distributed machine learning pipeline using Apache Spark MLlib, deployed on a multi-node Spark cluster orchestrated with Docker Compose.
+This project demonstrates end-to-end distributed machine learning using Apache Spark MLlib, executed on a multi-node Spark cluster deployed with Docker.
 
-The work focuses on distributed data processing, Spark ML pipelines, resource utilization, and performance comparison between per-node training and globally distributed training.
+The emphasis is on cluster architecture, distributed data processing, and scalable ML pipelines, rather than isolated model performance.
 
-Project Overview
+Why This Project Matters
 
-In this project, I:
+Many Spark projects stop at local mode or single-node execution.
+This project goes further by:
 
-Built a Spark standalone cluster (1 Master + 2 Workers) using Docker Compose.
+Running Spark in true multi-worker cluster mode
 
-Used PySpark and Spark MLlib to implement a full classification pipeline.
+Manually partitioning data to simulate data locality
 
-Worked with a real-world dataset on AI’s impact on jobs by 2030.
+Comparing per-node vs distributed ML training
 
-Trained and compared:
+Verifying execution using Spark Web UI metrics
 
-A global distributed model using the unified dataset.
+This reflects real-world big data and ML engineering workflows.
 
-Per-node models trained on individual data partitions.
+Problem Statement
 
-Analyzed execution using the Spark Web UI.
-
-Compared training time, F1-score, and resource utilization across approaches.
-
-This setup ensures true distributed execution rather than local-mode Spark.
+AI and automation are expected to significantly impact job markets by 2030.
+The objective is to predict job risk levels using structured job attributes and to evaluate how distributed systems improve scalability and consistency.
 
 Dataset
 
-AI Impact on Jobs 2030
-Source: Kaggle
-https://www.kaggle.com/datasets/khushikyad001/ai-impact-on-jobs-2030
+AI Impact on Jobs 2030 (Kaggle)
 
-The dataset contains structured information describing job roles and their exposure to AI and automation.
+The dataset contains real, structured records describing job roles and their exposure to AI.
 
-Key Features
+Features
 
-Job_Title (categorical)
+Job title
 
-Education_Level (categorical)
+Education level
 
-Average_Salary
+Average salary
 
-Years_Experience
+Years of experience
 
-AI_Exposure_Index
+AI exposure index
 
-Automation_Probability_2030
+Automation probability (2030)
 
-Tech_Growth_Factor
+Technology growth factor
 
-Skill_1 … Skill_10
+Skill indicators (Skill_1 … Skill_10)
 
-Target Variable
+Target
 
-Risk_Category — categorical label representing job risk due to AI and automation
+Risk_Category — categorical job risk level due to AI and automation
 
-All analyses are performed on real data; no synthetic data generation was used.
+✔ Real dataset
+✔ No synthetic data
 
-Architecture
+System Architecture
 
-The system consists of:
+The system is deployed using Docker Compose and consists of:
 
-Spark Master (cluster coordinator)
+Spark Master (Driver coordination)
 
-Two Spark Worker nodes (executors)
+Two Spark Workers (Executors)
 
-JupyterLab (PySpark) acting as the Spark Driver
+JupyterLab (PySpark driver interface)
 
-Shared Docker volume mounted at /data in all containers
+Shared volume (/data) across all containers
 
-Cluster Diagram
-        +----------------+
-        |  Spark Master  |
-        |  (Scheduler)   |
-        +--------+-------+
-                 |
-      ---------------------------
-      |                         |
-+--------------+        +--------------+
-|  Worker 1    |        |  Worker 2    |
-|  Executor    |        |  Executor    |
-+--------------+        +--------------+
+JupyterLab (Driver)
+        ↓
+   Spark Master
+        ↓
+--------------------
+| Worker 1 | Worker 2 |
+--------------------
 
-Data Sharing Strategy
 
-Dataset stored in a shared Docker volume (/data)
+Spark executes jobs in parallel across workers using executors.
 
-Data manually partitioned into:
+Data Partitioning Strategy
+
+To simulate distributed data ownership:
+
+The dataset was shuffled and split into:
 
 jobs_master.csv
 
@@ -95,133 +90,70 @@ jobs_worker1.csv
 
 jobs_worker2.csv
 
-Spark unifies these files into a distributed DataFrame
+Each file is loaded independently, then unified into a global DataFrame for distributed processing.
 
-This design simulates distributed data ownership while enabling parallel execution.
+This approach demonstrates:
 
-Step-by-Step Execution
-Step 1: Cluster Setup and Spark Session
+Data locality
 
-Docker Compose launches Spark Master and Workers.
+Parallel ingestion
 
-JupyterLab connects to the cluster using:
+Spark’s ability to coordinate distributed datasets
 
-spark://bd-spark-master:7077
+Machine Learning Pipeline (Spark MLlib)
 
+A reusable Spark ML pipeline was built using:
 
-Spark UI confirms multiple active executors.
+StringIndexer – label & categorical encoding
 
-Observation:
-The Spark session runs in cluster mode, not local mode.
+OneHotEncoder – sparse categorical vectors
 
-Step 2: Manual Data Splitting
+VectorAssembler – feature vector construction
 
-Dataset shuffled and split into three CSV files.
+LogisticRegression – distributed classifier
 
-Each split contains approximately one-third of the records.
+The same pipeline was reused for all experiments, ensuring fair comparison.
 
-Observation:
-Manual splitting makes data distribution explicit and auditable.
+Experiments
+1. Global Distributed Model
 
-Step 3: Loading Data on Each Node
+Trained on the full dataset
 
-Each CSV loaded as a Spark DataFrame.
+Executed across all Spark workers
 
-DataFrames unioned into a unified distributed dataset.
+Benefits from broader data coverage and parallelism
 
-Observation:
-Spark reads files in parallel and distributes partitions across executors.
+2. Per-Node Models
 
-Step 4: Spark SQL Processing
+Each node trains a model on its local data split
 
-Schema validation and exploratory queries using Spark SQL.
+Faster training due to smaller data
 
-Dataset repartitioned by label for improved parallelism.
+Higher variance in performance
 
-Data cached to optimize repeated access.
+Results Summary
+Training Strategy	Dataset Size	F1 Score	Training Time
+Per-node models	~1,000 rows	~0.99	Faster locally
+Distributed model	~3,000 rows	0.995	Efficient via parallelism
 
-Observation:
-Spark DAG optimization and caching reduce redundant computation.
+Key Insight:
+Distributed training provides stable accuracy while maintaining competitive training time due to Spark’s parallel execution.
 
-Step 5: Machine Learning Pipeline
+Spark UI Validation
 
-A reusable Spark MLlib pipeline was implemented:
+The Spark Web UI confirms distributed execution:
 
-StringIndexer for labels and categorical features
+Multiple active executors
 
-OneHotEncoder for categorical encoding
+Over 1,200 completed tasks
 
-VectorAssembler for feature construction
-
-LogisticRegression classifier
-
-The same pipeline is used for all experiments to ensure fair comparison.
-
-Part 1 — Global Distributed Model
-
-Model trained on the unified dataset
-
-Training distributed across all worker nodes
-
-Results
-
-F1-score: 0.995
-
-Training time: ~7.6 seconds
-
-Observation:
-Access to the full dataset provides stable performance and effective generalization.
-
-Part 2 — Per-Node Models
-
-Separate models were trained on each data partition.
-
-Per-Node Results
-Node	Records	F1 Score	Training Time (s)
-Master	1006	0.9911	9.43
-Worker 1	965	0.9979	8.77
-Worker 2	1029	0.9951	6.48
-
-Observation:
-Smaller datasets train faster but show more variance in performance.
-
-Global vs Per-Node Comparison
-Model Type	Records	F1 Score	Training Time (s)
-Per-node (avg)	~1000	~0.995	~8.2
-Distributed Global	3000	0.9950	7.61
-
-Conclusion:
-Distributed training combines scalability with stable accuracy.
-
-Spark UI Monitoring
-
-Spark Web UI confirms distributed execution:
-
-3 active executors
-
-1,276 completed tasks
-
-Balanced task distribution
+Balanced task scheduling across workers
 
 Shuffle read/write operations
 
 Zero failed tasks
 
-Screenshots are included in the screenshots/ directory.
-
-Project Structure
-spark-project/
-├── docker-compose.yml
-├── spark_data/
-│   ├── AI_Impact_on_Jobs_2030.csv
-│   └── split/
-│       ├── jobs_master.csv
-│       ├── jobs_worker1.csv
-│       └── jobs_worker2.csv
-├── notebook.ipynb
-├── screenshots/
-│   └── spark_ui_executors.png
-└── README.md
+This confirms the workload ran across the cluster, not locally.
 
 Technologies Used
 
@@ -235,16 +167,4 @@ Docker & Docker Compose
 
 JupyterLab
 
-Python 3
-
-Key Takeaways
-
-Spark MLlib enables scalable ML with minimal overhead
-
-Manual data partitioning clarifies distributed ownership
-
-Global distributed training provides stable performance
-
-Spark UI validates real parallel execution
-
-Docker enables reproducible big data environments
+Python
